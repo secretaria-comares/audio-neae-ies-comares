@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Audio-NEAE | IES Marqués de Comares</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        /* Animación para el spinner de carga */
+        .loader {
+            border-top-color: #4f46e5;
+            animation: spinner 1.5s linear infinite;
+        }
+        @keyframes spinner {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="bg-slate-50 min-h-screen flex items-center justify-center p-6 font-sans">
+
+    <div class="max-w-xl w-full bg-white rounded-[2.5rem] shadow-2xl p-10 border border-slate-100 transition-all">
+        
+        <div class="text-center mb-10">
+            <div class="bg-indigo-600 w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-indigo-200">
+                <i class="fas fa-accessibility text-white text-3xl"></i>
+            </div>
+            <h1 class="text-3xl font-black text-slate-800 uppercase tracking-tighter">Audio-NEAE <span class="text-indigo-600">Pro</span></h1>
+            <p class="text-slate-400 text-sm mt-2 font-medium italic">IA inclusiva para el IES Marqués de Comares</p>
+        </div>
+
+        <form id="uploadForm" class="space-y-6">
+            <div id="dropzone" class="group relative border-2 border-dashed border-slate-200 rounded-3xl p-12 text-center hover:border-indigo-400 transition-all bg-slate-50 cursor-pointer">
+                <input type="file" id="fileInput" name="archivo" required class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
+                
+                <div id="uploadContent">
+                    <i class="fas fa-file-pdf text-4xl text-slate-300 mb-4 group-hover:text-indigo-500 transition-colors"></i>
+                    <p class="text-slate-600 font-bold">Selecciona el PDF del temario</p>
+                    <p class="text-xs text-slate-400 mt-1">Se aplicará adaptación pedagógica y locución neuronal</p>
+                </div>
+
+                <div id="fileInfo" class="hidden flex flex-col items-center justify-center gap-2 text-indigo-600 font-bold">
+                    <i class="fas fa-check-circle text-2xl"></i>
+                    <span id="fileNameDisplay" class="text-sm">Archivo preparado</span>
+                </div>
+            </div>
+
+            <button type="submit" id="submitBtn" class="w-full bg-indigo-600 text-white font-black py-5 rounded-2xl shadow-xl shadow-indigo-100 hover:bg-indigo-700 transition transform hover:-translate-y-1 active:scale-95 flex items-center justify-center gap-3">
+                <i class="fas fa-wand-magic-sparkles"></i> GENERAR AUDIO ACCESIBLE
+            </button>
+        </form>
+
+        <div id="loadingOverlay" class="hidden mt-8 text-center py-4">
+            <div class="loader ease-linear rounded-full border-4 border-t-4 border-gray-100 h-12 w-12 mx-auto mb-4"></div>
+            <p class="text-indigo-700 font-bold text-lg">Procesando con IA...</p>
+            <p class="text-slate-400 text-xs mt-2 max-w-xs mx-auto">Estamos simplificando el lenguaje y generando la voz. Por favor, espera un momento.</p>
+        </div>
+
+        <div id="downloadArea" class="hidden mt-4 p-8 bg-indigo-50 border border-indigo-100 rounded-[2rem] text-center shadow-inner">
+            <div class="w-16 h-16 bg-white rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm">
+                <i class="fas fa-headphones-alt text-indigo-600 text-2xl"></i>
+            </div>
+            <p class="text-indigo-900 font-bold text-lg mb-1">¡Audio listo!</p>
+            <p class="text-indigo-400 text-xs mb-6 uppercase tracking-widest font-bold">Adaptación finalizada</p>
+            
+            <a id="downloadBtn" href="#" download class="w-full bg-indigo-600 text-white px-8 py-4 rounded-xl font-bold hover:bg-indigo-700 transition flex items-center justify-center gap-3 shadow-lg shadow-indigo-200">
+                <i class="fas fa-download"></i> DESCARGAR MP3
+            </a>
+            
+            <button onclick="window.location.reload()" class="mt-6 text-indigo-400 hover:text-indigo-600 text-xs font-bold uppercase tracking-widest flex items-center justify-center mx-auto gap-2 transition">
+                <i class="fas fa-redo-alt"></i> Convertir otro archivo
+            </button>
+        </div>
+
+        <div class="mt-10 pt-6 border-t border-slate-50 text-center">
+            <p class="text-[10px] text-slate-400 uppercase font-bold tracking-widest">
+                IES Marqués de Comares · Tecnología Inclusiva
+            </p>
+        </div>
+    </div>
+
+    <script>
+        const fileInput = document.getElementById('fileInput');
+        const uploadContent = document.getElementById('uploadContent');
+        const fileInfo = document.getElementById('fileInfo');
+        const fileNameDisplay = document.getElementById('fileNameDisplay');
+        const uploadForm = document.getElementById('uploadForm');
+        const loadingOverlay = document.getElementById('loadingOverlay');
+        const downloadArea = document.getElementById('downloadArea');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const dropzone = document.getElementById('dropzone');
+
+        // 1. Mostrar nombre del archivo al seleccionarlo
+        fileInput.addEventListener('change', function() {
+            if (fileInput.files.length > 0) {
+                uploadContent.classList.add('hidden');
+                fileInfo.classList.remove('hidden');
+                fileNameDisplay.textContent = fileInput.files[0].name;
+                dropzone.classList.add('border-indigo-400', 'bg-indigo-50');
+            }
+        });
+
+        // 2. Lógica de envío y recepción (AJAX)
+        uploadForm.addEventListener('submit', async function(e) {
+            e.preventDefault(); // Evita recargar la página
+            
+            // UI: Ocultar formulario y mostrar carga
+            uploadForm.classList.add('hidden');
+            loadingOverlay.classList.remove('hidden');
+
+            const formData = new FormData(uploadForm);
+
+            try {
+                // Petición al servidor Flask
+                const response = await fetch('/procesar', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (response.ok) {
+                    const audioUrl = await response.text();
+                    
+                    // UI: Ocultar carga y mostrar descarga
+                    loadingOverlay.classList.add('hidden');
+                    downloadArea.classList.remove('hidden');
+                    downloadBtn.href = audioUrl;
+                } else {
+                    throw new Error('Error en el servidor');
+                }
+            } catch (error) {
+                alert("Ocurrió un error procesando el archivo. Verifica tu conexión o el saldo de la API.");
+                window.location.reload();
+            }
+        });
+    </script>
+</body>
+</html>
