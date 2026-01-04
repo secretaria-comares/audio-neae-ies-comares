@@ -1,0 +1,5 @@
+.env
+uploads/
+static/audio_*.mp3
+__pycache__/
+*.pyc
